@@ -20,7 +20,8 @@ export default class App extends Component {
             DataisLoaded: false,
             ticket: [],
             tickets:0,
-            ticketView: false
+            ticketView: false,
+            nextPage: null
         };
         this.handlePageClick = this.handlePageClick.bind(this);
         this.handleTicket = this.handleTicket.bind(this);
@@ -82,13 +83,13 @@ export default class App extends Component {
     }
 
     async componentDidMount() {
-        const [first, second] = await Promise.all([
+        const [first] = await Promise.all([
             axios
                 .get(`/api/v2/tickets.json`, {headers: {'Authorization': `Basic YXhuMjAwMDYyQHV0ZGFsbGFzLmVkdS90b2tlbjpsVjNkcURBaG1NUXRadG4yaHR3a1JWY1g0cXhRdDRCUGlUUEY3aXVR`}})
                 .catch((error)=>this.setState({error})),
-            axios
-                .get(`/api/v2/tickets.json?page=2`, {headers: {'Authorization': `Basic YXhuMjAwMDYyQHV0ZGFsbGFzLmVkdS90b2tlbjpsVjNkcURBaG1NUXRadG4yaHR3a1JWY1g0cXhRdDRCUGlUUEY3aXVR`}})
-                .catch((error)=>this.setState({error})),
+            // axios
+            //     .get(`/api/v2/tickets.json?page=2`, {headers: {'Authorization': `Basic YXhuMjAwMDYyQHV0ZGFsbGFzLmVkdS90b2tlbjpsVjNkcURBaG1NUXRadG4yaHR3a1JWY1g0cXhRdDRCUGlUUEY3aXVR`}})
+            //     .catch((error)=>this.setState({error})),
 
         ]
         );
@@ -96,8 +97,37 @@ export default class App extends Component {
         {
             this.setState({
                 tickets: first.data.count,
-                completeData: first.data.tickets.concat(second.data.tickets)
+                completeData: first.data.tickets,
+                nextPage: first.data.next_page
+                // completeData: first.data.tickets.concat(second.data.tickets)
             })
+
+            while (this.state.nextPage != null)
+            {
+                const temp2 = this.state.nextPage.split("/");
+                const temp3 = temp2.splice(3);
+                const temp4 = temp3.join("/");
+                const [temp] = await Promise.all([
+                    axios
+                        .get(`/`+temp4 , {headers: {'Authorization': `Basic YXhuMjAwMDYyQHV0ZGFsbGFzLmVkdS90b2tlbjpsVjNkcURBaG1NUXRadG4yaHR3a1JWY1g0cXhRdDRCUGlUUEY3aXVR`}})
+                        .catch((error)=>this.setState({error})),
+
+                ]);
+                if(this.state.error != null)
+                {
+                    break;
+                }
+                else
+                {
+                    let prevState = this.state.completeData
+                    this.setState({
+
+                        completeData: prevState.concat(temp.data.tickets),
+                        nextPage: temp.data.next_page
+                    })
+                }
+
+            }
 
             const tmp = this.state.completeData;
             const slice = tmp.slice(this.state.offset, this.state.offset + this.state.perPage)
