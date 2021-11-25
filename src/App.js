@@ -11,6 +11,7 @@ export default class App extends Component {
         super(props);
         this.state = {
             error: null,
+            pageNum: [],
             offset: 0,
             data: [],
             completeData: [],
@@ -18,40 +19,42 @@ export default class App extends Component {
             currentPage: 0,
             DataisLoaded: false,
             ticket: [],
+            tickets:0,
             ticketView: false
         };
         this.handlePageClick = this.handlePageClick.bind(this);
         this.handleTicket = this.handleTicket.bind(this);
     }
     receivedData() {
-        const tmp = this.state.completeData;
-        const slice = tmp.slice(this.state.offset, this.state.offset + this.state.perPage)
-        const postData = slice.map(pd => <React.Fragment>
-            <Card>
-                <Row>
-                    <Col>
-                        <Card.Body>
-                            id: {pd.id} <br />
-                            url: {pd.url} <br />
-                            status: {pd.status} <br />
-                            subject: {pd.subject} <br />
-                        </Card.Body>
-                    </Col>
-                    <Col style={{textAlign:"right", marginTop:"auto", marginBottom:"auto", paddingRight:"30px"}}>
-                        <Button variant="secondary" size="lg" value={pd.url} onClick={this.handleTicket} active>
-                            View Ticket
-                        </Button>
-                    </Col>
-                </Row>
-            </Card>
-        <br />
 
-        </React.Fragment>)
-        this.setState({
-            pageCount: Math.ceil(tmp.length / this.state.perPage),
-            postData
-        })
+            const tmp = this.state.completeData;
+            const slice = tmp.slice(this.state.offset, this.state.offset + this.state.perPage)
+            debugger;
+            const postData = slice.map(pd => <React.Fragment>
+                <Card>
+                    <Row>
+                        <Col>
+                            <Card.Body>
+                                id: {pd.id} <br />
+                                url: {pd.url} <br />
+                                status: {pd.status} <br />
+                                subject: {pd.subject} <br />
+                            </Card.Body>
+                        </Col>
+                        <Col style={{textAlign:"right", marginTop:"auto", marginBottom:"auto", paddingRight:"30px"}}>
+                            <Button variant="secondary" size="lg" value={pd.url} onClick={this.handleTicket} active>
+                                View Ticket
+                            </Button>
+                        </Col>
+                    </Row>
+                </Card>
+                <br />
 
+            </React.Fragment>)
+            this.setState({
+                pageCount: Math.ceil(this.state.tickets / this.state.perPage),
+                postData
+            })
     }
     handlePageClick = (e) => {
         const selectedPage = e.selected;
@@ -74,54 +77,60 @@ export default class App extends Component {
             .get( '/'+temp4, {headers: {'Authorization': `Basic YXhuMjAwMDYyQHV0ZGFsbGFzLmVkdS90b2tlbjpsVjNkcURBaG1NUXRadG4yaHR3a1JWY1g0cXhRdDRCUGlUUEY3aXVR`}})
             .then(res => {
                 const dat = res.data;
-                this.setState({ticket: dat.request, ticketView: true});
+                this.setState({ticket: dat.ticket, ticketView: true});
             });
     }
 
-    componentDidMount() {
-        axios
-            .get(`/api/v2/requests.json`, {headers: {'Authorization': `Basic YXhuMjAwMDYyQHV0ZGFsbGFzLmVkdS90b2tlbjpsVjNkcURBaG1NUXRadG4yaHR3a1JWY1g0cXhRdDRCUGlUUEY3aXVR`}})
-            .then((res) => {
+    async componentDidMount() {
+        const [first, second] = await Promise.all([
+            axios
+                .get(`/api/v2/tickets.json`, {headers: {'Authorization': `Basic YXhuMjAwMDYyQHV0ZGFsbGFzLmVkdS90b2tlbjpsVjNkcURBaG1NUXRadG4yaHR3a1JWY1g0cXhRdDRCUGlUUEY3aXVR`}}),
+            axios
+                .get(`/api/v2/tickets.json?page=2`, {headers: {'Authorization': `Basic YXhuMjAwMDYyQHV0ZGFsbGFzLmVkdS90b2tlbjpsVjNkcURBaG1NUXRadG4yaHR3a1JWY1g0cXhRdDRCUGlUUEY3aXVR`}}),
 
-                const data = res.data;
-                this.setState({completeData: data.requests})
-                const tmp = this.state.completeData;
-                const slice = tmp.slice(this.state.offset, this.state.offset + this.state.perPage)
-                const postData = slice.map(pd => <React.Fragment>
+        ]);
+
+        this.setState({
+            tickets: first.data.count,
+            completeData: first.data.tickets.concat(second.data.tickets)
+        })
+
+                        const tmp = this.state.completeData;
+                        const slice = tmp.slice(this.state.offset, this.state.offset + this.state.perPage)
+                        const postData = slice.map(pd => <React.Fragment>
 
                             <Card>
                                 <Row>
-                                <Col>
-                                    <Card.Body>
-                                        id: {pd.id} <br />
-                                        url: {pd.url} <br />
-                                        status: {pd.status} <br />
-                                        subject: {pd.subject} <br />
-                                    </Card.Body>
-                                </Col>
-                                <Col style={{textAlign:"right", marginTop:"auto", marginBottom:"auto", paddingRight:"30px"}}>
-                                    <Button variant="secondary" size="lg" value={pd.url} onClick={this.handleTicket} active>
-                                        View Ticket
-                                    </Button>
-                                </Col>
+                                    <Col>
+                                        <Card.Body>
+                                            id: {pd.id} <br/>
+                                            url: {pd.url} <br/>
+                                            status: {pd.status} <br/>
+                                            subject: {pd.subject} <br/>
+                                        </Card.Body>
+                                    </Col>
+                                    <Col style={{
+                                        textAlign: "right",
+                                        marginTop: "auto",
+                                        marginBottom: "auto",
+                                        paddingRight: "30px"
+                                    }}>
+                                        <Button variant="secondary" size="lg" value={pd.url} onClick={this.handleTicket}
+                                                active>
+                                            View Ticket
+                                        </Button>
+                                    </Col>
                                 </Row>
                             </Card>
 
-                    <br />
-                </React.Fragment>)
+                            <br/>
+                        </React.Fragment>)
 
-                this.setState({
-                    DataisLoaded: true,
-                    pageCount: Math.ceil(tmp.length / this.state.perPage),
-                    postData
-                })
-            },
-                (error) => {
-                    this.setState({
-                        isLoaded: true,
-                        error
-                    });
-                });
+                        this.setState({
+                            DataisLoaded: true,
+                            pageCount: Math.ceil(this.state.tickets / this.state.perPage),
+                            postData
+                        })
     }
     render() {
         if (this.state.error) {
