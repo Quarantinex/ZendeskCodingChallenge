@@ -84,53 +84,59 @@ export default class App extends Component {
     async componentDidMount() {
         const [first, second] = await Promise.all([
             axios
-                .get(`/api/v2/tickets.json`, {headers: {'Authorization': `Basic YXhuMjAwMDYyQHV0ZGFsbGFzLmVkdS90b2tlbjpsVjNkcURBaG1NUXRadG4yaHR3a1JWY1g0cXhRdDRCUGlUUEY3aXVR`}}),
+                .get(`/api/v2/tickets.json`, {headers: {'Authorization': `Basic YXhuMjAwMDYyQHV0ZGFsbGFzLmVkdS90b2tlbjpsVjNkcURBaG1NUXRadG4yaHR3a1JWY1g0cXhRdDRCUGlUUEY3aXVR`}})
+                .catch((error)=>this.setState({error})),
             axios
-                .get(`/api/v2/tickets.json?page=2`, {headers: {'Authorization': `Basic YXhuMjAwMDYyQHV0ZGFsbGFzLmVkdS90b2tlbjpsVjNkcURBaG1NUXRadG4yaHR3a1JWY1g0cXhRdDRCUGlUUEY3aXVR`}}),
+                .get(`/api/v2/tickets.json?page=2`, {headers: {'Authorization': `Basic YXhuMjAwMDYyQHV0ZGFsbGFzLmVkdS90b2tlbjpsVjNkcURBaG1NUXRadG4yaHR3a1JWY1g0cXhRdDRCUGlUUEY3aXVR`}})
+                .catch((error)=>this.setState({error})),
 
-        ]);
+        ]
+        );
+        if(this.state.error == null)
+        {
+            this.setState({
+                tickets: first.data.count,
+                completeData: first.data.tickets.concat(second.data.tickets)
+            })
 
-        this.setState({
-            tickets: first.data.count,
-            completeData: first.data.tickets.concat(second.data.tickets)
-        })
+            const tmp = this.state.completeData;
+            const slice = tmp.slice(this.state.offset, this.state.offset + this.state.perPage)
+            const postData = slice.map(pd => <React.Fragment>
 
-                        const tmp = this.state.completeData;
-                        const slice = tmp.slice(this.state.offset, this.state.offset + this.state.perPage)
-                        const postData = slice.map(pd => <React.Fragment>
+                <Card>
+                    <Row>
+                        <Col>
+                            <Card.Body>
+                                id: {pd.id} <br/>
+                                url: {pd.url} <br/>
+                                status: {pd.status} <br/>
+                                subject: {pd.subject} <br/>
+                            </Card.Body>
+                        </Col>
+                        <Col style={{
+                            textAlign: "right",
+                            marginTop: "auto",
+                            marginBottom: "auto",
+                            paddingRight: "30px"
+                        }}>
+                            <Button variant="secondary" size="lg" value={pd.url} onClick={this.handleTicket}
+                                    active>
+                                View Ticket
+                            </Button>
+                        </Col>
+                    </Row>
+                </Card>
 
-                            <Card>
-                                <Row>
-                                    <Col>
-                                        <Card.Body>
-                                            id: {pd.id} <br/>
-                                            url: {pd.url} <br/>
-                                            status: {pd.status} <br/>
-                                            subject: {pd.subject} <br/>
-                                        </Card.Body>
-                                    </Col>
-                                    <Col style={{
-                                        textAlign: "right",
-                                        marginTop: "auto",
-                                        marginBottom: "auto",
-                                        paddingRight: "30px"
-                                    }}>
-                                        <Button variant="secondary" size="lg" value={pd.url} onClick={this.handleTicket}
-                                                active>
-                                            View Ticket
-                                        </Button>
-                                    </Col>
-                                </Row>
-                            </Card>
+                <br/>
+            </React.Fragment>)
 
-                            <br/>
-                        </React.Fragment>)
+            this.setState({
+                DataisLoaded: true,
+                pageCount: Math.ceil(this.state.tickets / this.state.perPage),
+                postData
+            })
+        }
 
-                        this.setState({
-                            DataisLoaded: true,
-                            pageCount: Math.ceil(this.state.tickets / this.state.perPage),
-                            postData
-                        })
     }
     render() {
         if (this.state.error) {
